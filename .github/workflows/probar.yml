@@ -1,0 +1,22 @@
+name: Probar dominio en GitHub Pages
+on:
+  workflow_dispatch:
+    inputs:
+      dominio:
+        description: Dominio a probar
+        required: true
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probar las 4 IPs de GitHub Pages
+        env:
+          D: ${{ inputs.dominio }}
+        run: |
+          for ip in 185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153; do
+            for p in / /en.html /style.css /assets/sunrise.jpg; do
+              curl -sk --resolve "$D:443:$ip" "https://$D$p" -o t -w "$ip https $p %{http_code} " ; sha256sum t | cut -c1-16
+            done
+            curl -s --resolve "$D:80:$ip" "http://$D/" -o /dev/null -w "$ip http / %{http_code} %{redirect_url}\n"
+          done
+          echo | openssl s_client -connect 185.199.108.153:443 -servername "$D" 2>/dev/null | openssl x509 -noout -subject
