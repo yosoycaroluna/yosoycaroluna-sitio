@@ -1,0 +1,28 @@
+name: Diagnostico de dominio
+on:
+  workflow_dispatch:
+    inputs:
+      dominio:
+        description: Dominio
+        required: true
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probar cada IP del dominio
+        env:
+          D: ${{ inputs.dominio }}
+        run: |
+          echo "== DNS publico"; dig +short A "$D" @8.8.8.8; dig +short A "www.$D" @8.8.8.8; dig +short CNAME "www.$D" @8.8.8.8
+          for ip in 192.124.249.39 3.33.229.73; do
+            echo "================ $ip"
+            echo | timeout 10 openssl s_client -connect $ip:443 -servername "$D" 2>&1 | grep -E 'subject=|issuer=|alert|Verify return|Protocol' | head -6
+            curl -s -m 15 --resolve "$D:443:$ip" "https://$D/" -o t.html -D h.txt -w "https status:%{http_code} ssl_verify:%{ssl_verify_result}\n" || echo "https FAILED $?"
+            grep -iE '^(server|alt-svc|x-sucuri-id|location):' h.txt || true
+            grep -o '<title>[^<]*' t.html || true
+            curl -s -m 15 --resolve "$D:80:$ip" "http://$D/" -o /dev/null -w "http status:%{http_code} -> %{redirect_url}\n" || echo "http FAILED"
+            curl -s -m 15 --resolve "www.$D:443:$ip" "https://www.$D/" -o /dev/null -w "www https status:%{http_code} -> %{redirect_url}\n" || echo "www https FAILED $?"
+          done
+          echo "== Prueba repetida por DNS normal (10 veces)"
+          for i in $(seq 1 10); do curl -s -m 10 "https://$D/" -o t.html -w "%{http_code} %{remote_ip} " || echo -n "FAIL "; grep -o '<title>[^<]*' t.html | head -1 || echo; done
+          curl --version | head -1
