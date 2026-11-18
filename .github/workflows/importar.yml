@@ -18,9 +18,16 @@ jobs:
           curl -fsSL "$U/" -o index.html
           curl -fsSL "$U/en" -o en.html
           for f in style.css app.js assets/portrait-about.png assets/portrait-community.png assets/portrait-realestate.png assets/sunrise.jpg; do curl -fsSL "$U/$f" -o "$f"; done
+          python3 - index.html en.html <<'PY'
+          import re,sys
+          for f in sys.argv[1:]:
+              s=open(f,encoding='utf-8').read()
+              s=re.sub(r'<script>\(function\(\)\{function c\(\)\{var b=a\.contentDocument.*?</script>','',s,flags=re.S)
+              open(f,'w',encoding='utf-8').write(s)
+          PY
           cat > sums.txt <<'EOF'
-          485201efd280f716b3a94d944bc693c5dadafd78e21d9abf4dc1cf4aa720b275  index.html
-          1d82749e60954d85480497dab9c1125bbd387983674808a3bd97974ccadf84d8  en.html
+          51435e9f879c790b37a3de9dff0f7dab0d1c6a820abc2f91b42d7089a2cc70e1  index.html
+          cfc9114a5a5e09b6dd7fab1d4e85a119ff18c4940561aa5c590579684bfa0ffb  en.html
           bac3cf45c195e6bebc196c3688c701763022bba886a8d0afd48a4baf70f42a68  style.css
           46c1ebbdfa509709002edaa50fa532255cde763cf4c28e768c67ae40933ba0d8  app.js
           9ccfd392c630b17ba5e743a74370bc91518c55de7e87659d7c095f6b88571968  assets/portrait-about.png
