@@ -1,0 +1,39 @@
+name: Importar sitio aprobado
+on:
+  push:
+    paths: ['.github/workflows/importar.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar y verificar archivos exactos
+        run: |
+          set -e
+          U=https://yosoycaroluna-renacer.yosoycaroluna.chatgpt.site
+          mkdir -p assets
+          curl -fsSL "$U/" -o index.html
+          curl -fsSL "$U/en" -o en.html
+          for f in style.css app.js assets/portrait-about.png assets/portrait-community.png assets/portrait-realestate.png assets/sunrise.jpg; do curl -fsSL "$U/$f" -o "$f"; done
+          cat > sums.txt <<'EOF'
+          485201efd280f716b3a94d944bc693c5dadafd78e21d9abf4dc1cf4aa720b275  index.html
+          1d82749e60954d85480497dab9c1125bbd387983674808a3bd97974ccadf84d8  en.html
+          bac3cf45c195e6bebc196c3688c701763022bba886a8d0afd48a4baf70f42a68  style.css
+          46c1ebbdfa509709002edaa50fa532255cde763cf4c28e768c67ae40933ba0d8  app.js
+          9ccfd392c630b17ba5e743a74370bc91518c55de7e87659d7c095f6b88571968  assets/portrait-about.png
+          0e0ebab9f0ac6ea985160248a206d55da9a5335a353026896fc9739cafa53673  assets/portrait-community.png
+          6afcb32c911ff2b3c056eed90b1599eeaa8b293dd8c2ff89534ac60d2a57da81  assets/portrait-realestate.png
+          4f289cb721848acaf9029329a9d57fa761b4b09d8a064598ad1b27746e4c2d0f  assets/sunrise.jpg
+          EOF
+          sed -i 's/^ *//' sums.txt
+          sha256sum -c sums.txt
+          rm sums.txt
+          touch .nojekyll
+      - name: Guardar en el repositorio
+        run: |
+          git add -A
+          git diff --cached --quiet || git -c user.name=Importador -c user.email=importador commit -m "Sitio aprobado YoSoyCaroluna"
+          git push
