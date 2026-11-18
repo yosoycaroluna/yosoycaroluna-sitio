@@ -1,0 +1,28 @@
+name: Actualizar enlace de Real Estate
+on:
+  push:
+    paths: ['.github/workflows/enlaces.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  enlaces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cambiar destino del boton de Real Estate
+        run: |
+          set -e
+          OLD='href="https://carosellsnj-home-guide.yosoycaroluna.chatgpt.site"'
+          H=homes.yosoycaroluna; H="$H.com"
+          grep -c "$OLD" index.html en.html
+          sed -i "s#$OLD#href=\"https://$H/?lang=es\"#" index.html
+          sed -i "s#$OLD#href=\"https://$H/\"#" en.html
+          ! grep -q chatgpt index.html en.html
+          grep -o "href=\"https://$H[^\"]*\"" index.html en.html
+          grep -c 'href="#casas"' index.html en.html
+      - name: Guardar
+        run: |
+          git add index.html en.html
+          git diff --cached --quiet || git -c user.name=Enlaces -c user.email=enlaces commit -m "Real Estate apunta a homes"
+          git push
